@@ -1,0 +1,29 @@
+{
+  "version": "V4",
+  "documentation_date": "2026-10-13",
+  "frozen_distribution_commit": "81567de8f53545a6fa8c414d542f198686556283",
+  "original_archive_sha256": "93315f045f6520f96a3a237e5b46a0761e5a06812fe106d967ae74f0d64eb249",
+  "simulation_files_changed": [],
+  "documentation_files": [
+    {
+      "path": "README.md",
+      "bytes": 6116,
+      "sha256": "cd28aa75ef77f5d658f70a052ba6ba0d21c894f5b733bdf6c3273e604ac8c8df"
+    },
+    {
+      "path": "PUBLICACION_GITHUB.md",
+      "bytes": 1505,
+      "sha256": "50f4437cded5624b6f64a02865cd1da89b7acb3de16015b8539a134363d1fb63"
+    },
+    {
+      "path": "docs/INFORME_DESARROLLO.md",
+      "bytes": 9058,
+      "sha256": "dcd746c98c8b57c2d8313b96bd55cf3eedb8a9337711df6a7ffbd98211d9beb5"
+    },
+    {
+      "path": "docs/evidencias/pruebas_rust_v4.json",
+      "bytes": 484,
+      "sha256": "dca1a921de0e2974747a199ffa6e3dedc3c0b97866d46f6d4460f73e7e1641b3"
+    }
+  ]
+}

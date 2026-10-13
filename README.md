@@ -1,5 +1,9 @@
 # OA2IS V4 — Aceite y cantidad de sensores
 
+## Memoria del desarrollo
+
+[Qué se realizó, cómo se implementó, herramientas y fuentes](docs/INFORME_DESARROLLO.md). Incluye resultados, comprobaciones, supuestos, límites y enlaces al código. Documentación añadida el 13 de octubre de 2026.
+
 Nueva solución independiente. Las versiones V1, V2, V3, experiments y outputs se conservaron mediante un inventario SHA-256 previo y comprobación posterior (preservation_report.json).
 
 ## Abrir en este PC

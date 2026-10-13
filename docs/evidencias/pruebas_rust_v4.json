@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "tests": 8,
+  "failed": 0,
+  "rust": "1.99.0",
+  "target": "x86_64-pc-windows-gnu",
+  "profile": "release",
+  "names": [
+    "laminar_pair_viscosity_dissipates_and_conserves_momentum",
+    "orbital_velocity_is_derivative",
+    "ratio_matches_reference_within_point_one_percent",
+    "tangential_sun_wall_velocity",
+    "valid_three_planet_assembly",
+    "willis_speed_identity",
+    "samples_are_on_geometric_boundary",
+    "volume_changes_particle_count"
+  ]
+}

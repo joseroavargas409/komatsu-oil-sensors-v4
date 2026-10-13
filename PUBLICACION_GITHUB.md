@@ -18,3 +18,7 @@ También se puede clonar el repositorio y seguir README.md y portable/README.md
 Esta es una simulación aproximada sin validación experimental ni CAD OEM.
 No se ha probado en un servidor externo. Consultar README.md y research
 para distinguir los resultados, los supuestos y las limitaciones físicas.
+
+## Documentación posterior a la distribución
+
+El 13 de octubre de 2026 se añadió la [memoria de desarrollo](docs/INFORME_DESARROLLO.md) y un enlace en README. GITHUB_SNAPSHOT.json identifica los archivos de la distribución congelada y el primer commit; las huellas de la actualización documental figuran en docs/DOCUMENTACION_MANIFEST.json. Los motores, resultados y ZIP de esa distribución conservan su contenido.
