@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "ready_cases": 15,
+  "config_rejects_extra_variables": true,
+  "cached_sensor_count_case": true,
+  "selected_sensors": 12,
+  "csv_rows": 1452,
+  "research_available": true
+}

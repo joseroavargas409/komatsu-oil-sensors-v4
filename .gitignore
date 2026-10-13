@@ -1,0 +1,20 @@
+# Archivos generados al ejecutar o reconstruir una copia.
+__pycache__/
+*.pyc
+*.pyo
+/jobs/
+/runtime/
+/downloads/
+/vm/
+/server_stdout.log
+/server_stderr.log
+/release-check/
+/release/
+.env
+.env.*
+id_ed25519*
+*.pem
+engine/target/*
+!engine/target/release/
+engine/target/release/*
+!engine/target/release/oa2is_oil_native.exe

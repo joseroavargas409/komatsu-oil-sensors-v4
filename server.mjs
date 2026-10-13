@@ -1,0 +1,32 @@
+// Open-source server using only Node's built-in modules. All writes belong to V4.
+import fs from 'node:fs';import path from 'node:path';import http from 'node:http';import crypto from 'node:crypto';import {spawn} from 'node:child_process';import {fileURLToPath} from 'node:url';
+import {FIXED,PROBES,SENSOR_COUNTS,VOLUMES} from './dashboard/constants.js';
+const ROOT=path.dirname(fileURLToPath(import.meta.url)),PORT=Number(process.env.PORT||8771),HOST=process.env.HOST||'127.0.0.1',jobs=new Map();
+const jsonFile=p=>JSON.parse(fs.readFileSync(p,'utf8')),volumeDir=oil=>path.join(ROOT,'data/volumes',String(oil));
+const engineHash=crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT,'dashboard/oil_engine.wasm'))).digest('hex');
+function validate(raw){if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Configuración inválida.');if(Object.keys(raw).some(k=>!['oil_liters','sensor_count'].includes(k)))throw new Error('Solo se pueden variar los litros y la cantidad de sensores.');const {oil_liters,sensor_count}=raw;if(!Number.isFinite(oil_liters)||oil_liters<30||oil_liters>145)throw new Error('Volumen: 30 a 145 L.');if(!Number.isInteger(sensor_count)||sensor_count<2||sensor_count>12)throw new Error('Sensores: entero entre 2 y 12.');return {oil_liters,sensor_count};}
+function ready(oil){const p=path.join(volumeDir(oil),'summary.json');if(!fs.existsSync(p)||!fs.existsSync(path.join(volumeDir(oil),'positions.bin')))return false;const s=jsonFile(p);return s.numerically_accepted&&s.engine_sha256===engineHash;}
+function result(oil,count){if(!ready(oil))throw new Error('El caso está pendiente o fue rechazado.');const d=jsonFile(path.join(volumeDir(oil),'result.json'));return {...d,config:{oil_liters:oil,sensor_count:count},probes:PROBES.slice(0,count),samples:d.samples.map(s=>({...s,sensors:s.sensors.slice(0,count)})),positions_url:`/api/positions?oil=${oil}`,sensor_variation:'observation-only: virtual non-intrusive sensors reuse the same computed fluid'};}
+function cases(){return VOLUMES.flatMap(oil_liters=>SENSOR_COUNTS.map(sensor_count=>({oil_liters,sensor_count,label:`${oil_liters} L · ${sensor_count} sensores`,ready:ready(oil_liters)})));}
+function reply(res,body,status=200){const b=Buffer.from(JSON.stringify(body));res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Content-Length':b.length,'Cache-Control':'no-store'});res.end(b);}
+function file(res,p,type){if(!fs.existsSync(p))throw new Error('Archivo no disponible.');res.writeHead(200,{'Content-Type':type,'Content-Length':fs.statSync(p).size});fs.createReadStream(p).pipe(res);}
+function worker(j){if(ready(j.oil_liters)){j.state='done';j.finished=Date.now();return;}j.state='running';j.started=Date.now();const dir=volumeDir(j.oil_liters);fs.mkdirSync(dir,{recursive:true});const fd=fs.openSync(path.join(dir,'run.log'),'w');const c=spawn(process.execPath,[path.join(ROOT,'run_case.mjs'),String(j.oil_liters)],{cwd:ROOT,stdio:['ignore',fd,fd]});c.on('error',e=>{j.state='failed';j.error=e.message;});c.on('exit',code=>{fs.closeSync(fd);j.finished=Date.now();j.state=code===0&&ready(j.oil_liters)?'done':'failed';if(j.state==='failed')j.error='El cálculo no cumplió los controles numéricos. Consulte run.log.';fs.mkdirSync(path.join(ROOT,'jobs'),{recursive:true});fs.writeFileSync(path.join(ROOT,'jobs',j.id+'.json'),JSON.stringify(j));});}
+const server=http.createServer(async(req,res)=>{try{const url=new URL(req.url,`http://${HOST}:${PORT}`),p=url.pathname;
+  if(req.method==='GET'){
+    if(p==='/api/cases')return reply(res,cases());
+    if(p==='/api/config')return reply(res,{fixed:FIXED,probes:PROBES,allowed:{oil_liters:[30,145],sensor_count:[2,12]}});
+    if(p==='/api/result'){const c=validate({oil_liters:Number(url.searchParams.get('oil')),sensor_count:Number(url.searchParams.get('sensors'))});return reply(res,result(c.oil_liters,c.sensor_count));}
+    if(p==='/api/positions'){const oil=Number(url.searchParams.get('oil'));validate({oil_liters:oil,sensor_count:2});if(!ready(oil))throw new Error('Caso no disponible.');return file(res,path.join(volumeDir(oil),'positions.bin'),'application/octet-stream');}
+    if(p==='/api/job'){const j=jobs.get(url.searchParams.get('id'));if(!j)throw new Error('Cálculo desconocido.');return reply(res,{...j,elapsed_s:((j.finished||Date.now())-j.started)/1000});}
+    if(p==='/api/csv'){const c=validate({oil_liters:Number(url.searchParams.get('oil')),sensor_count:Number(url.searchParams.get('sensors'))}),d=result(c.oil_liters,c.sensor_count);const rows=['time_s,sensor_id,oil_fraction,air_fraction,signal,capacitance_proxy_pf,level_mm,temperature_c,state'];for(const f of d.samples)for(const s of f.sensors)rows.push([f.time_s,s.id,s.oil_fraction,s.air_fraction,s.signal,s.capacitance_proxy_pf,s.level_mm,s.temperature_c,s.state].join(','));res.writeHead(200,{'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="oil_${c.oil_liters}_s${c.sensor_count}.csv"`});return res.end('\ufeff'+rows.join('\n'));}
+    if(p==='/api/research')return file(res,path.join(ROOT,'research/sources.md'),'text/plain; charset=utf-8');
+    const name=p==='/'?'index.html':decodeURIComponent(p.slice(1));if(name.includes('..')||name.includes('\\')||name.includes(':'))throw new Error('Ruta inválida.');const target=path.join(ROOT,'dashboard',name);const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.wasm':'application/wasm','.json':'application/json'};return file(res,target,types[path.extname(name)]||'application/octet-stream');
+  }
+  if(req.method==='POST'&&p==='/api/run'){
+    const origin=req.headers.origin;if(origin){const o=new URL(origin);if(!['127.0.0.1','localhost'].includes(o.hostname)||Number(o.port)!==PORT)throw new Error('Origen no permitido.');}
+    let text='';for await(const chunk of req){text+=chunk;if(text.length>4000)throw new Error('Configuración demasiado grande.');}const cfg=validate(JSON.parse(text));if([...jobs.values()].some(j=>j.state==='running'))return reply(res,{error:'Hay un cálculo en curso.'},409);
+    const j={id:crypto.randomUUID(),...cfg,state:'queued',started:Date.now()};jobs.set(j.id,j);worker(j);return reply(res,{id:j.id},202);
+  }
+  return reply(res,{error:'Ruta no disponible.'},404);
+}catch(e){if(!res.headersSent)reply(res,{error:e.message},400);else res.end();}});
+server.listen(PORT,HOST,()=>console.log(`OA2IS V4: http://${HOST}:${PORT}`));

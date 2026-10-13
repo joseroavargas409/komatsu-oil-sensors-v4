@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';
+const base=process.env.TEST_URL||'http://127.0.0.1:8771';
+const cases=await(await fetch(base+'/api/cases')).json();assert.equal(cases.length,15);assert.ok(cases.every(c=>c.ready));
+const config=await(await fetch(base+'/api/config')).json();assert.equal(config.fixed.motor_rpm,300);assert.equal(config.fixed.duration_s,2.4);
+const invalid=await fetch(base+'/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({oil_liters:95,sensor_count:6,motor_rpm:600})});assert.equal(invalid.status,400);
+const cached=await fetch(base+'/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({oil_liters:95,sensor_count:12})});assert.equal(cached.status,202);
+const job=await cached.json(),done=await(await fetch(base+'/api/job?id='+job.id)).json();assert.equal(done.state,'done');
+const result=await(await fetch(base+'/api/result?oil=95&sensors=12')).json();assert.equal(result.probes.length,12);assert.equal(result.samples.length,121);assert.ok(result.times.at(-1)>=2);
+const csv=await fetch(base+'/api/csv?oil=95&sensors=12'),lines=(await csv.text()).trim().split('\n');assert.equal(lines.length,1+121*12);
+const research=await fetch(base+'/api/research');assert.equal(research.status,200);
+const report={passed:true,ready_cases:15,config_rejects_extra_variables:true,cached_sensor_count_case:true,selected_sensors:12,csv_rows:121*12,research_available:true};
+fs.writeFileSync(new URL('./api_validation_report.json',import.meta.url),JSON.stringify(report,null,2));console.log(JSON.stringify(report));

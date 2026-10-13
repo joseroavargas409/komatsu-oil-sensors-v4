@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "test": "identical 95 L initialization; moving boundaries versus stationary boundaries for 100 steps",
+  "purpose": "verify the mechanism actually changes the fluid, not merely the drawing",
+  "physical_duration_s": 0.10000002384185791,
+  "particles": 3624,
+  "rms_position_difference_m": 0.021800863370666473,
+  "rotating_kinetic_energy_j": 12.469535827636719,
+  "stationary_kinetic_energy_j": 9.186906814575195,
+  "delivery_cases": "All fifteen delivered cases use the rotating mechanism and last 2.4 s."
+}
